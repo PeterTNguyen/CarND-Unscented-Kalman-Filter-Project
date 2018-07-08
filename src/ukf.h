@@ -38,7 +38,7 @@ public:
   MatrixXd Xsig_pred_;
 
   ///* predicted augmented sigma points matrix
-  MatrixXd Xsig_pred_aug_;
+  MatrixXd Xsig_aug_;
 
   ///* time when the state is true, in us
   long long time_us_;
@@ -75,6 +75,17 @@ public:
 
   ///* Sigma point spreading parameter
   double lambda_;
+
+  ///* Sigma point spreading parameter
+  double lambda_aug_;
+
+  ///* Number of sigma points
+  int n_sig_;
+
+  ///* Number of augmented sigma points
+  int n_sig_aug_;
+
+
 
 
   /**

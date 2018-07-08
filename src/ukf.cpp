@@ -18,6 +18,8 @@ UKF::UKF() {
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
 
+  is_initialized_ = false;
+
   // initial state vector
   x_ = VectorXd(5);
   x_aug_ = VectorXd(7);
@@ -28,8 +30,17 @@ UKF::UKF() {
 
   // init sigma pt matrices and lengths
   n_x_ = 5;
+  n_aug_ = 7;
   lambda_ = 3-n_x_;
-  Xsig_pred_ = MatrixXd(n_x_, 2*n_x_+1);
+  lambda_aug_ = 3-n_aug_;
+  n_sig_ = 2*n_x_ + 1;
+  n_sig_aug_ = 2*n_aug_ + 1;
+  Xsig_pred_ = MatrixXd(n_x_, 2*n_aug_+1);
+
+  // Weigths calculation
+  weights_ = VectorXd(n_sig_aug_);
+  weights_(0) = lambda_ / (lambda_ + n_aug_);
+  weights_.tail(2*n_aug_).setConstant(1/(lambda_ + n_aug_)/2);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
@@ -63,7 +74,6 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
-  is_initialized_ = false;
 }
 
 UKF::~UKF() {}
@@ -126,13 +136,72 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
  */
 void UKF::Prediction(double delta_t) {
   /**
-  TODO:
-
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
   //calculate square root of P
-  MatrixXd A = P_.llt().matrixL();
+
+  //Augmented state vector
+  x_aug_.head(n_x_) = x_;
+  x_aug_(n_x_) = 0;
+  x_aug_(n_x_+1) = 0;
+
+  //Augmented covariance matrix
+  P_aug_.topLeftCorner(n_x_,n_x_) = P_;
+  P_aug_(n_x_,n_x_) = std_a_ * std_a_;
+  P_aug_(n_x_+1,n_x_+1) = std_yawdd_ * std_yawdd_;
+
+  //Generate Sigma Pts
+  MatrixXd A = P_aug_.llt().matrixL();
+  A *= sqrt(lambda_aug_ - n_aug_);
+  Xsig_aug_ = x_aug_.replicate(1,n_sig_aug_);
+  Xsig_aug_.block(0,1,n_aug_,n_aug_) += A;
+  Xsig_aug_.block(0,1+n_aug_,n_aug_,n_aug_) -= A;
+
+  //Prediction Step
+  VectorXd pred1 = VectorXd(n_x_);
+  pred1(2) = 0;
+  pred1(4) = 0;
+  VectorXd pred2 = VectorXd(n_x_);
+  Xsig_pred_ = Xsig_aug_.topLeftCorner(n_x_, n_sig_aug_);
+  double v, psi, psi_dot, nu_a, nu_psi;
+  double delta_t2 = delta_t * delta_t;
+  for(int i = 0; i < n_sig_aug_; i++)
+  {
+    v = Xsig_aug_(2, i);
+    psi = Xsig_aug_(3, i);
+    psi_dot = Xsig_aug_(4, i);
+    nu_a = Xsig_aug_(5, i);
+    nu_psi = Xsig_aug_(6, i);
+    //avoid division by zero
+    if(psi_dot == 0.0)
+    {
+      std::cout << "Error, can't divide by zero" << std::endl;
+      return;
+    }
+    //first order
+    pred1(0) = v/psi_dot*(sin(psi + psi_dot*delta_t ) - sin(psi));
+    pred1(1) = v/psi_dot*(-cos(psi + psi_dot*delta_t ) + cos(psi));
+    pred1(3) = psi_dot*delta_t;
+
+    //second order
+    pred2(0) = delta_t2*cos(psi)*nu_a/2;
+    pred2(1) = delta_t2*sin(psi)*nu_a/2;
+    pred2(2) = delta_t*nu_a;
+    pred2(3) = delta_t2*nu_psi/2;
+    pred2(4) = delta_t*nu_psi;
+
+    //update predicted sigma points
+    Xsig_pred_.col(i) += pred1 + pred2;
+  }
+
+  //Calculate Predicted state and state covariance
+  //predict state mean
+  x_ = Xsig_pred_*weights_;
+  //predict state covariance matrix
+  MatrixXd meanRep = x_.replicate(1,2*n_aug_+1);
+  MatrixXd sigma_diff = Xsig_pred_ - meanRep;
+  P_ = sigma_diff*weights_.asDiagonal()*sigma_diff.transpose();
 }
 
 /**
