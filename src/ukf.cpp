@@ -1,6 +1,7 @@
 #include "ukf.h"
 #include "Eigen/Dense"
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -50,7 +51,7 @@ UKF::UKF() {
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = M_PI/3;
-  
+
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -79,29 +80,15 @@ UKF::UKF() {
   R_radar_(2,2) = std_radrd_*std_radrd_;
   //DO NOT MODIFY measurement noise values above these are provided by the sensor manufacturer.
   
-  /**
-  TODO:
-  //test
-
-  Complete the initialization. See ukf.h for other member properties.
-
-  Hint: one or more values initialized above might be wildly off...
-  */
 }
 
-UKF::~UKF() {}
+UKF::~UKF(){}
 
 /**
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
  */
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Make sure you switch between lidar and radar
-  measurements.
-  */
   if (!is_initialized_)
   {
     P_ << 1, 0, 0, 0, 0,
@@ -270,6 +257,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   //Update to x state mean and P state covariance
   x_ = x_pred_ + K*(z - z_pred);
   P_ = P_pred_ - K*S*K.transpose();
+
+  //Calculate NIS
+  MatrixXd nis_lidar = (z - z_pred).transpose()*S.inverse()*(z - z_pred);
+  nis_lidar_ = nis_lidar(0,0);
 }
 
 /**
@@ -328,6 +319,10 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //Update to x state mean and P state covariance
   x_ = x_pred_ + K*(z - z_pred);
   P_ = P_pred_ - K*S*K.transpose();
+
+  //Calculate NIS
+  MatrixXd nis_radar = (z - z_pred).transpose()*S.inverse()*(z - z_pred);
+  nis_radar_ = nis_radar(0,0);
 }
 
 

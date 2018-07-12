@@ -103,7 +103,9 @@ public:
   ///* Number of augmented sigma points
   int n_sig_aug_;
 
-
+  //NIS values
+  double nis_lidar_;
+  double nis_radar_;
 
 
   /**
