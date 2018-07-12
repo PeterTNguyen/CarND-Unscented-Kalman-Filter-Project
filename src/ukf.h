@@ -28,11 +28,17 @@ public:
   //Augmented state vector
   VectorXd x_aug_;
 
+  /// * predicted state mean
+  VectorXd x_pred_;
+
   ///* state covariance matrix
   MatrixXd P_;
 
   ///* augmented state covariance matrix
   MatrixXd P_aug_;
+
+  ///* predicted state covariance matrix
+  MatrixXd P_pred_;
 
   ///* predicted sigma points matrix
   MatrixXd Xsig_pred_;
@@ -64,6 +70,12 @@ public:
   ///* Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
 
+  ///* Radar measurement covariance
+  MatrixXd R_radar_;
+
+  ///* Radar measurement covariance
+  MatrixXd R_lidar_;
+
   ///* Weights of sigma points
   VectorXd weights_;
 
@@ -72,6 +84,12 @@ public:
 
   ///* Augmented state dimension
   int n_aug_;
+
+  ///* Radar measurement dimension
+  int n_zr_;
+
+  ///* Lidar measurement dimension
+  int n_zl_;
 
   ///* Sigma point spreading parameter
   double lambda_;
