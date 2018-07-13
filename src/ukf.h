@@ -107,6 +107,8 @@ public:
   double nis_lidar_;
   double nis_radar_;
 
+  ///* Kalman Filter vars
+  MatrixXd H_lidar_;
 
   /**
    * Constructor
