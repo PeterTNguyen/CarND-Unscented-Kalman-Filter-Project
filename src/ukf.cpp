@@ -8,8 +8,6 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
-#define UNWRAP(x) fmod(x + M_PI, 2*M_PI) - M_PI
-
 /**
  * Initializes Unscented Kalman filter
  * This is scaffolding, do not modify
@@ -215,18 +213,16 @@ void UKF::Prediction(double delta_t) {
 
     //update predicted sigma points
     Xsig_pred_.col(i) += pred1 + pred2;
-    //Xsig_pred_(3,i) = UNWRAP(Xsig_pred_(3,i));
   }
 
   //Calculate Predicted state and state covariance
   //predict state mean
   x_pred_ = Xsig_pred_*weights_;
   //predict state covariance matrix
-  MatrixXd meanRep = x_.replicate(1,n_sig_aug_);
+  MatrixXd meanRep = x_pred_.replicate(1,n_sig_aug_);
   MatrixXd sigma_diff = Xsig_pred_ - meanRep;
   for(int i = 0; i < n_sig_aug_; i++)
   {
-    //sigma_diff(3,i) = UNWRAP(sigma_diff(3,i));
     UnwrapAngle(sigma_diff(3,i));
   }
   P_pred_ = sigma_diff*weights_.asDiagonal()*sigma_diff.transpose();
@@ -305,7 +301,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   MatrixXd z_sigma_diff = Zsig - z_pred_mat;
   for(int i = 0; i < n_sig_aug_; i++)
   {
-    //z_sigma_diff(1,i) = UNWRAP(z_sigma_diff(1,i));
     UnwrapAngle(z_sigma_diff(1,i));
   }
 
@@ -317,9 +312,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   MatrixXd sigma_meas_diff = (Zsig - z_pred.replicate(1,n_sig_aug_));
   for(int i = 0; i < n_sig_aug_; i++)
   {
-    //sigma_state_diff(3,i) = UNWRAP(sigma_state_diff(3,i));
-    //sigma_meas_diff(1,i) = UNWRAP(sigma_meas_diff(1,i));
-
     UnwrapAngle(sigma_state_diff(3,i));
     UnwrapAngle(sigma_meas_diff(1,i));
   }
@@ -333,7 +325,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   //Update to x state mean and P state covariance
   VectorXd z_diff = z-z_pred;
-  //z_diff(1) = UNWRAP(z_diff(1));
   UnwrapAngle(z_diff(1));
   x_ = x_pred_ + K*z_diff;
   P_ = P_pred_ - K*S*K.transpose();
