@@ -36,6 +36,10 @@ int main()
   // NIS output fstream
   FILE * pNisLidar = fopen("NIS_lidar.csv","w");
   FILE * pNisRadar = fopen("NIS_radar.csv","w");
+  FILE * pGroundTruth = fopen("GroundTruth.csv","w");
+  FILE * pEstimates = fopen("Estimates.csv","w");
+  fclose(pEstimates);
+  fclose(pGroundTruth);
   fclose(pNisLidar);
   fclose(pNisRadar);
 
@@ -138,6 +142,13 @@ int main()
         estimate(3) = v2;
         
         estimations.push_back(estimate);
+
+        FILE * pGroundTruth = fopen("GroundTruth.csv","a");
+        FILE * pEstimates = fopen("Estimates.csv","a");
+        fprintf(pGroundTruth, "%f,%f,%f,%f\n", x_gt, y_gt, vx_gt, vy_gt);
+        fprintf(pEstimates, "%f,%f,%f,%f\n", p_x, p_y, v1, v2);
+        fclose(pEstimates);
+        fclose(pGroundTruth);
 
         VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
 
